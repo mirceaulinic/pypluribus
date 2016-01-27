@@ -14,7 +14,7 @@
 
 import pexpect
 
-from exceptions import TimeoutError, EOFError
+from exceptions import TimeoutError, EOFError, ConnectionError
 
 
 class PluribusDevice(object):
@@ -72,18 +72,15 @@ class PluribusDevice(object):
 
         self.device.close()
 
-
-    def execute_show(self, command):
+    def cli(self, command):
 
         if not self.up:
             raise ConnectionError("Not connected to the deivce")
 
         output = ''
-        format_command = '{command} parsable-delim ;'.format(
-            command = command
-        )
+
         try:
-            self.device.sendline(format_command)
+            self.device.sendline(command)
             self.device.expect_exact(self.cli_banner, timeout = self.timeout)
             output = self.device.before
         except pexpect.TIMEOUT:
@@ -92,3 +89,12 @@ class PluribusDevice(object):
             raise EOFError("")
 
         return output
+
+
+    def execute_show(self, command):
+
+        format_command = '{command} parsable-delim ;'.format(
+            command = command
+        )
+
+        return self.cli(format_command)
