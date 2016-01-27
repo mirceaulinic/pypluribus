@@ -12,17 +12,83 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import pexpect
+
+from exceptions import TimeoutError, EOFError
+
+
 class PluribusDevice(object):
 
-    def __init__(hostname, username, passowrd, timeout = 60):
+    def __init__(self, hostname, username, password, port = 22, timeout = 60):
 
-        pass
+        self.hostname = hostname
+        self.username = username
+        self.password = password
+        self.port     = port
+        self.timeout  = timeout
+
+        self.cli_banner = 'CLI ({user}@{host}) > '.format(
+            user = self.username,
+            host = self.hostname
+        )
+
+        self.device = None
+        self.up = False
 
     def open(self):
 
-        pass
+        self.device = pexpect.spawn(
+            'ssh -o ConnectTimeout={timeout} -p {port} {user}@{host}'.format(
+                timeout = self.timeout,
+                port    = self.port,
+                user    = self.username,
+                host    = self.hostname
+            )
+        )
+
+        try:
+            index = self.device.expect(['\(yes\/no\)\?', 'Password:', pexpect.EOF], timeout = self.timeout)
+            if index == 0:
+                self.device.sendline('yes')
+                index = self.device.expect(['\(yes\/no\)\?', 'Password:', pexpect.EOF], timeout = self.timeout)
+            if index == 1:
+                self.device.sendline(self.password)
+            elif index == 2:
+                pass
+            self.device.expect_exact(self.cli_banner, timeout = self.timeout)
+            self.device.sendline('pager off') # to disable paging and get all output at once
+            self.device.expect_exact(self.cli_banner, timeout = self.timeout)
+            self.up = True
+        except pexpect.TIMEOUT:
+            raise TimeoutError("Connection to the device took too long!")
+        except pexpect.EOR:
+            raise EOFError("Reached EOF!")
+
 
     def close(self):
 
-        pass
+        if not self.up:
+            return
 
+        self.device.close()
+
+
+    def execute_show(self, command):
+
+        if not self.up:
+            raise ConnectionError("Not connected to the deivce")
+
+        output = ''
+        format_command = '{command} parsable-delim ;'.format(
+            command = command
+        )
+        try:
+            self.device.sendline(format_command)
+            self.device.expect_exact(self.cli_banner, timeout = self.timeout)
+            output = self.device.before
+        except pexpect.TIMEOUT:
+            raise TimeoutError("")
+        except pexpect.EOF:
+            raise EOFError("")
+
+        return output
