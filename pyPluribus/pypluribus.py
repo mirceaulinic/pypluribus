@@ -60,10 +60,9 @@ class PluribusDevice(object):
             self.device.expect_exact(self.cli_banner, timeout = self.timeout)
             self.up = True
         except pexpect.TIMEOUT:
-            raise TimeoutError("Connection to the device took too long!")
-        except pexpect.EOR:
-            raise EOFError("Reached EOF!")
-
+            raise ConnectionError("Connection to the device took too long!")
+        except pexpect.EOF:
+            raise ConnectionError("Cannot connect to the device! Reason: reached EOF!")
 
     def close(self):
 
@@ -75,7 +74,7 @@ class PluribusDevice(object):
     def cli(self, command):
 
         if not self.up:
-            raise ConnectionError("Not connected to the deivce")
+            raise ConnectionError("Not connected to the deivce.")
 
         output = ''
 
@@ -84,12 +83,11 @@ class PluribusDevice(object):
             self.device.expect_exact(self.cli_banner, timeout = self.timeout)
             output = self.device.before
         except pexpect.TIMEOUT:
-            raise TimeoutError("")
+            raise TimeoutError("Execution of command took too long!")
         except pexpect.EOF:
-            raise EOFError("")
+            raise EOFError("Reached EOF while executing comamnd.")
 
         return output
-
 
     def execute_show(self, command):
 
