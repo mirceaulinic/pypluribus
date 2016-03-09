@@ -65,10 +65,12 @@ class PluribusDevice(object):  # pylint: disable=too-many-instance-attributes
         )
 
         try:
-            index = self._connection.expect(['\(yes\/no\)\?', 'Password:', pexpect.EOF], timeout=self._timeout)  # pylint: disable=anomalous-backslash-in-string
+            index = self._connection.expect(['\(yes\/no\)\?',  # pylint: disable=anomalous-backslash-in-string
+                                            'Password:', pexpect.EOF], timeout=self._timeout)
             if index == 0:
                 self._connection.sendline('yes')
-                index = self._connection.expect(['\(yes\/no\)\?', 'Password:', pexpect.EOF], timeout=self._timeout)  # pylint: disable=anomalous-backslash-in-string
+                index = self._connection.expect(['\(yes\/no\)\?',  # pylint: disable=anomalous-backslash-in-string
+                                                'Password:', pexpect.EOF], timeout=self._timeout)
             if index == 1:
                 self._connection.sendline(self._password)
             elif index == 2:
@@ -98,8 +100,14 @@ class PluribusDevice(object):  # pylint: disable=too-many-instance-attributes
 
         :param command: Command to be executed on the CLI.
         :raise pyPluribus.exceptions.TimeoutError: when execution of the command exceeds the timeout
-        :raise pyPluribus.exceptions.EOFError: when not able to retrieve the output
+        :raise pyPluribus.exceptions.CommandExecutionError: when not able to retrieve the output
         :return: Raw output of the command
+
+        CLI Example:
+
+        .. code-block:: python
+
+            device.cli('switch-poweroff')
         """
         if not self.connected:
             raise pyPluribus.exceptions.ConnectionError("Not connected to the deivce.")
@@ -112,22 +120,63 @@ class PluribusDevice(object):  # pylint: disable=too-many-instance-attributes
             output = self._connection.before
         except pexpect.TIMEOUT:
             raise pyPluribus.exceptions.TimeoutError("Execution of command took too long!")
-        except pexpect.EOF:
-            raise pyPluribus.exceptions.EOFError("Reached EOF while executing comamnd.")
+        except pexpect.EOF as eof:
+            raise pyPluribus.exceptions.CommandExecutionError("Unable to execute command: \
+                {err}".format(err=eof.message))
 
         return output
 
-    def execute_show(self, command):
+    def execute_show(self, show_command, delim=';'):
         """
         Executes show-type commands on the CLI and returns parsable output usinng ';' as delimitor.
 
-        :param command: Show command to be executed
+        :param show_command: Show command to be executed
+        :param delim: Custom delimiter. Default value: ';'
         :raise pyPluribus.exceptions.TimeoutError: when execution of the command exceeds the timeout
-        :raise pyPluribus.exceptions.EOFError: when not able to retrieve the output
+        :raise pyPluribus.exceptions.CommandExecutionError: when not able to retrieve the output
         :return: Parsable output
+
+        CLI Example:
+
+        .. code-block:: python
+
+            device.execute_show('switch-info-show')
+            device.execute_show('node-show', '$$')
         """
-        format_command = '{command} parsable-delim ;'.format(
-            command=command
+
+        if not show_command.endswith('-show'):
+            raise pyPluribus.exceptions.CommandExecutionError('All show commands must end with "-show"!')
+
+        if not delim or delim is None:
+            delim = ';'
+
+        format_command = '{command} parsable-delim {delim}'.format(
+            command=show_command,
+            delim=delim
         )
 
         return self.cli(format_command)
+
+    def show(self, command, delim=';'):
+        """
+        Executes show-type commands on the CLI and returns parsable output usinng ';' as delimitor.
+
+        :param command: Command to be executed
+        :param delim: Custom delimiter. Default value: ';'
+        :raise pyPluribus.exceptions.TimeoutError: when execution of the command exceeds the timeout
+        :raise pyPluribus.exceptions.CommandExecutionError: when not able to retrieve the output
+        :return: Parsable output of the requred stanza
+
+        CLI Example:
+
+        .. code-clock:: python
+
+            device.show('switch-info')
+            device.show('switch info')
+        """
+
+        if not command.endswith('-show'):
+            command += '-show'
+        command = command.replace(' ', '-')
+
+        return self.execute_show(command, delim)
