@@ -23,7 +23,7 @@ class TimeoutError(Exception):
     pass
 
 
-class CommandExecutionError(Exception):  # pylint: disable=redefined-builtin
+class CommandExecutionError(Exception):
     """Raised in case the output cannot be retrieved."""
     pass
 
