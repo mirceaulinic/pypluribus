@@ -19,7 +19,7 @@ from exceptions import TimeoutError, EOFError, ConnectionError
 
 class PluribusDevice(object):
 
-    def __init__(self, hostname, username, password, port = 22, timeout = 60):
+    def __init__(self, hostname, username, password, port=22, timeout=60):
 
         self.hostname = hostname
         self.username = username
@@ -28,8 +28,8 @@ class PluribusDevice(object):
         self.timeout  = timeout
 
         self.cli_banner = 'CLI ({user}@{host}) > '.format(
-            user = self.username,
-            host = self.hostname
+            user=self.username,
+            host=self.hostname
         )
 
         self.device = None
@@ -47,17 +47,17 @@ class PluribusDevice(object):
         )
 
         try:
-            index = self.device.expect(['\(yes\/no\)\?', 'Password:', pexpect.EOF], timeout = self.timeout)
+            index = self.device.expect(['\(yes\/no\)\?', 'Password:', pexpect.EOF], timeout=self.timeout)
             if index == 0:
                 self.device.sendline('yes')
-                index = self.device.expect(['\(yes\/no\)\?', 'Password:', pexpect.EOF], timeout = self.timeout)
+                index = self.device.expect(['\(yes\/no\)\?', 'Password:', pexpect.EOF], timeout=self.timeout)
             if index == 1:
                 self.device.sendline(self.password)
             elif index == 2:
                 pass
-            self.device.expect_exact(self.cli_banner, timeout = self.timeout)
+            self.device.expect_exact(self.cli_banner, timeout=self.timeout)
             self.device.sendline('pager off') # to disable paging and get all output at once
-            self.device.expect_exact(self.cli_banner, timeout = self.timeout)
+            self.device.expect_exact(self.cli_banner, timeout=self.timeout)
             self.up = True
         except pexpect.TIMEOUT:
             raise ConnectionError("Connection to the device took too long!")
@@ -67,7 +67,7 @@ class PluribusDevice(object):
     def close(self):
 
         if not self.up:
-            return
+            return None
 
         self.device.close()
 
@@ -80,7 +80,7 @@ class PluribusDevice(object):
 
         try:
             self.device.sendline(command)
-            self.device.expect_exact(self.cli_banner, timeout = self.timeout)
+            self.device.expect_exact(self.cli_banner, timeout=self.timeout)
             output = self.device.before
         except pexpect.TIMEOUT:
             raise TimeoutError("Execution of command took too long!")
@@ -92,7 +92,7 @@ class PluribusDevice(object):
     def execute_show(self, command):
 
         format_command = '{command} parsable-delim ;'.format(
-            command = command
+            command=command
         )
 
         return self.cli(format_command)
