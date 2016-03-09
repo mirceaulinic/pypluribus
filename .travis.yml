@@ -20,3 +20,4 @@ deploy:
 
 script:
   - pylint --rcfile=.pylintrc pyPluribus/*.py
+  - pylint --rcfile=.pylintrc test/unit/TestPluribus.py
