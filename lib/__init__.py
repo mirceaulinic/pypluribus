@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright 2016 CloudFlare, Inc. All rights reserved.
 #
 # The contents of this file are licensed under the Apache License, Version 2.0
@@ -12,4 +13,9 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-from pypluribus import PluribusDevice
+"""
+Import lib objects
+"""
+
+from __future__ import absolute_import
+from lib.device import PluribusDevice
