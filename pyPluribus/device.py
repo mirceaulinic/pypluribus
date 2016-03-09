@@ -65,12 +65,12 @@ class PluribusDevice(object):  # pylint: disable=too-many-instance-attributes
         )
 
         try:
-            index = self._connection.expect(['\(yes\/no\)\?',
-                'Password:', pexpect.EOF], timeout=self._timeout)  # pylint: disable=anomalous-backslash-in-string
+            index = self._connection.expect(['\(yes\/no\)\?',  # pylint: disable=anomalous-backslash-in-string
+                                            'Password:', pexpect.EOF], timeout=self._timeout)
             if index == 0:
                 self._connection.sendline('yes')
-                index = self._connection.expect(['\(yes\/no\)\?',
-                    'Password:', pexpect.EOF], timeout=self._timeout)  # pylint: disable=anomalous-backslash-in-string
+                index = self._connection.expect(['\(yes\/no\)\?',  # pylint: disable=anomalous-backslash-in-string
+                                                'Password:', pexpect.EOF], timeout=self._timeout)
             if index == 1:
                 self._connection.sendline(self._password)
             elif index == 2:
@@ -121,7 +121,8 @@ class PluribusDevice(object):  # pylint: disable=too-many-instance-attributes
         except pexpect.TIMEOUT:
             raise pyPluribus.exceptions.TimeoutError("Execution of command took too long!")
         except pexpect.EOF as eof:
-            raise pyPluribus.exceptions.CommandExecutionError("Unable to execute command: {}".format(eof.message))
+            raise pyPluribus.exceptions.CommandExecutionError("Unable to execute command: \
+                {err}".format(err=eof.message))
 
         return output
 
@@ -144,7 +145,7 @@ class PluribusDevice(object):  # pylint: disable=too-many-instance-attributes
         """
 
         if not show_command.endswith('-show'):
-            raise  pyPluribus.exceptions.CommandExecutionError('All show commands must end with "-show"!')
+            raise pyPluribus.exceptions.CommandExecutionError('All show commands must end with "-show"!')
 
         if not delim or delim is None:
             delim = ';'
@@ -156,7 +157,7 @@ class PluribusDevice(object):  # pylint: disable=too-many-instance-attributes
 
         return self.cli(format_command)
 
-    def show(self, command, delim = ';'):
+    def show(self, command, delim=';'):
         """
         Executes show-type commands on the CLI and returns parsable output usinng ';' as delimitor.
 
