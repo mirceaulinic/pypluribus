@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright 2016 CloudFlare, Inc. All rights reserved.
 #
 # The contents of this file are licensed under the Apache License, Version 2.0
@@ -12,14 +13,24 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-class TimeoutError(Exception):
+"""
+This module contains configuration-specific class PluribusConfig and necessary helpers.
+"""
 
-    pass
+from __future__ import absolute_import
 
-class EOFError(Exception):
 
-    pass
+class PluribusConfig(object):
 
-class ConnectionError(Exception):
+    """Defines configuration-specific methods such as: commit, rollback, diff etc."""
 
-    pass
+    def __init__(self, device):
+        self._device = device
+
+    def commit(self):  # pylint: disable=no-self-use
+        """Will commit the changes on the device"""
+        return True
+
+    def diff(self):  # pylint: disable=no-self-use
+        """Will compute the differences"""
+        return ''
