@@ -1,0 +1,22 @@
+language: python
+
+python:
+  - 2.7
+
+install:
+  - pip install pylint
+  - pip install saltpylint
+  - pip install pep8
+  - pip install -r requirements.txt
+# will not make tests for the moment
+# as we do not have mock data yet
+#  - pip install nose
+
+deploy:
+  provider: pypi
+  on:
+    tags: true
+    branch: master
+
+script:
+  - pylint --rcfile=.pylintrc pyPluribus/*.py
