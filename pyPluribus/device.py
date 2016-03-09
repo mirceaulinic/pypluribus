@@ -20,9 +20,10 @@ PluribusConfig class, in config.py file.
 """
 
 from __future__ import absolute_import
+from socket import error, gaierror
 
 # third party libs
-import pexpect
+import paramiko
 
 # local modules
 import pyPluribus.exceptions
@@ -42,11 +43,9 @@ class PluribusDevice(object):  # pylint: disable=too-many-instance-attributes
         self._timeout = timeout
         self._keepalive = keepalive
 
-        self._cli_banner = 'CLI ({user}@{host}) > '.format(
-            user=self._username,
-            host=self._hostname
+        self._ssh_banner = 'Connected to Switch {hostname};'.format(
+            hostname=self._hostname
         )
-
         self._connection = None
 
         self.connected = False
@@ -56,37 +55,25 @@ class PluribusDevice(object):  # pylint: disable=too-many-instance-attributes
 
     def open(self):
         """Opens a SSH connection with a Pluribus machine."""
-        self._connection = pexpect.spawn(
-            'ssh -o TCPKeepAlive=yes -o ServerAliveInterval={kpalv} -o ConnectTimeout={timeout} -p {port} {user}@{host}\
-            '.format(
-                timeout=self._timeout,
-                port=self._port,
-                user=self._username,
-                host=self._hostname,
-                kpalv=self._keepalive
-            )
-        )
-
+        self._connection = paramiko.SSHClient()
+        self._connection.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         try:
-            index = self._connection.expect(['\(yes\/no\)\?',  # pylint: disable=anomalous-backslash-in-string
-                                            'Password:', pexpect.EOF], timeout=self._timeout)
-            if index == 0:
-                self._connection.sendline('yes')
-                index = self._connection.expect(['\(yes\/no\)\?',  # pylint: disable=anomalous-backslash-in-string
-                                                'Password:', pexpect.EOF], timeout=self._timeout)
-            if index == 1:
-                self._connection.sendline(self._password)
-            elif index == 2:
-                pass
-            self._connection.expect_exact(self._cli_banner, timeout=self._timeout)
-            self._connection.sendline('pager off')  # to disable paging and get all output at once
-            self._connection.expect_exact(self._cli_banner, timeout=self._timeout)
+            self._connection.connect(hostname=self._hostname,
+                                     username=self._username,
+                                     password=self._password,
+                                     timeout=self._timeout,
+                                     port=self._port)
             self.connected = True
             self.config = PluribusConfig(self)
-        except pexpect.TIMEOUT:
-            raise pyPluribus.exceptions.ConnectionError("Connection to the device took too long!")
-        except pexpect.EOF:
-            raise pyPluribus.exceptions.ConnectionError("Cannot connect to the device! Able to access the device?!")
+        except paramiko.ssh_exception.AuthenticationException:
+            raise pyPluribus.exceptions.ConnectionError("Unable to open connection with {hostname}: \
+                invalid credentials!".format(hostname=self._hostname))
+        except socket.error as se:
+            raise pyPluribus.exceptions.ConnectionError("Cannot open connection: {}. \
+                Wrong port?".format(se.message))
+        except socket.gaierror as sg:
+            raise pyPluribus.exceptions.ConnectionError("Cannot open connection: {}. \
+                Wrong hostname?".format(sg.message))
 
     def close(self):
         """Closes the SSH connection if the connection is UP."""
@@ -108,7 +95,7 @@ class PluribusDevice(object):  # pylint: disable=too-many-instance-attributes
 
     def cli(self, command):
         """
-        Executes a command and return raw output from the CLI.
+        Executes a command and returns raw output from the CLI.
 
         :param command: Command to be executed on the CLI.
         :raise pyPluribus.exceptions.TimeoutError: when execution of the command exceeds the timeout
@@ -124,26 +111,28 @@ class PluribusDevice(object):  # pylint: disable=too-many-instance-attributes
         if not self.connected:
             raise pyPluribus.exceptions.ConnectionError("Not connected to the deivce.")
 
-        output = ''
+        cli_output = ''
 
-        try:
-            self._connection.sendline(command)
-            self._connection.expect_exact(self._cli_banner, timeout=self._timeout)
-            output = self._connection.before
-        except pexpect.TIMEOUT:
-            raise pyPluribus.exceptions.TimeoutError("Execution of command took too long!")
-        except pexpect.EOF as eof:
-            raise pyPluribus.exceptions.CommandExecutionError("Unable to execute command: \
-                {err}".format(err=eof.message))
+        ssh_session = self._connection.get_transport().open_session()  # opens a new SSH session
 
-        return output
+        ssh_session.exec_command(command, self._timeout)
 
-    def execute_show(self, show_command, delim=';'):
+        ssh_output = ''
+        err_output = ''
+
+        ssh_output_makefile = ssh_session.makefile()
+        ssh_error_makefile = ssh_session.makefile_stderr()
+
+        for byte_output in ssh_output_makefile:
+            ssh_output += byte_output
+
+
+    def execute_show(self, show_command, delim = ';'):
         """
         Executes show-type commands on the CLI and returns parsable output usinng ';' as delimitor.
 
-        :param show_command: Show command to be executed
-        :param delim: Custom delimiter. Default value: ';'
+        :param command: Show command to be executed
+        :param delim: Will use specific delimitor. Default: ';'
         :raise pyPluribus.exceptions.TimeoutError: when execution of the command exceeds the timeout
         :raise pyPluribus.exceptions.CommandExecutionError: when not able to retrieve the output
         :return: Parsable output
@@ -157,7 +146,8 @@ class PluribusDevice(object):  # pylint: disable=too-many-instance-attributes
         """
 
         if not show_command.endswith('-show'):
-            raise pyPluribus.exceptions.CommandExecutionError('All show commands must end with "-show"!')
+            raise  pyPluribus.exceptions.CommandExecutionError('All show commands must end with "-show"!')
+
 
         if not delim or delim is None:
             delim = ';'
