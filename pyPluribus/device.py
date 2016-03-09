@@ -31,9 +31,7 @@ from pyPluribus.config import PluribusConfig
 
 class PluribusDevice(object):  # pylint: disable=too-many-instance-attributes
 
-    """
-    Connection-speciifc and basic interaction with a PLuribus device.
-    """
+    """Connection establishment and basic interaction with a Pluribus device."""
 
     def __init__(self, hostname, username, password, port=22, timeout=60):
 
