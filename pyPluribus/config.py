@@ -82,14 +82,14 @@ class PluribusConfig(object):
 
         return self._upload_config_content(configuration)
 
-    def discard(self): # pylint: disable=no-self-use
+    def discard(self):  # pylint: disable=no-self-use
         """Clears uncommited changes"""
         return self.rollback(1)
 
     def commit(self):  # pylint: disable=no-self-use
         """Will commit the changes on the device"""
         self._last_working_config = self._download_running_config()
-        return True # this will be always true
+        return True  # this will be always true
         # since the changes are automatically applied
         # Pluribus is WYSIWYG-type device...
 
@@ -100,7 +100,7 @@ class PluribusConfig(object):
     def rollback(self, number=1):
         """Rollbacks the configuration to a previous committed state."""
         available_configs = len(self._config_history)
-        config_location = available_configs - number
-        config = ''
+        config_location = available_configs - number - 1
+        config = self._config_history[config_location]
         self._upload_config_content(config, rollbacked=True)
         return True
