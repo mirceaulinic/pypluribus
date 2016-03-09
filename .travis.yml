@@ -20,5 +20,5 @@ deploy:
     branch: master
 
 script:
-  - pylint --rcfile=.pylintrc lib/*.py
+  - pylint --rcfile=.pylintrc pyPluribus/*.py
   - pylint --rcfile=.pylintrc test/unit/TestPluribus.py
