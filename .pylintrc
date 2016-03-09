@@ -29,8 +29,6 @@ persistent=yes
 load-plugins=saltpylint.pep8,
   saltpylint.pep263,
   saltpylint.strings,
-  saltpylint.fileperms,
-  saltpylint.py3modernize,
   saltpylint.smartup,
   saltpylint.minpyver
 
@@ -46,13 +44,6 @@ unsafe-load-any-extension=no
 # be loaded. Extensions are loading into the active Python interpreter and may
 # run arbitrary code
 extension-pkg-whitelist=
-
-# Fileperms Lint Plugin Settings
-fileperms-default=0644
-fileperms-ignore-paths=tests/runtests.py,tests/jenkins*.py,tests/saltsh.py,tests/buildpackage.py
-
-# Py3 Modernize PyLint Plugin Settings
-modernize-nofix = libmodernize.fixes.fix_dict_six
 
 # Minimum Python Version To Enforce
 minimum-python-version = 2.6
@@ -144,34 +135,9 @@ init-import=no
 # not used).
 dummy-variables-rgx=_|dummy
 
-# List of additional names supposed to be defined in builtins. Remember that
-# you should avoid to define new builtins when possible.
-additional-builtins=__opts__,
-  __utils__,
-  __salt__,
-  __pillar__,
-  __grains__,
-  __context__,
-  __ret__,
-  __env__,
-  __low__,
-  __states__,
-  __lowstate__,
-  __running__,
-  __active_provider_name__,
-  __master_opts__,
-  __jid_event__,
-  __instance_id__,
-  __salt_system_encoding__,
-  __proxy__,
-  __serializers__,
-  __reg__,
-  __events__
-
 # List of strings which can identify a callback function by name. A callback
 # name must start or end with one of those strings.
 callbacks=cb_,_cb
-
 
 [FORMAT]
 # Maximum number of characters on a single line.
