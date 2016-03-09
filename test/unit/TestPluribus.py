@@ -73,7 +73,7 @@ class TestPluribusDevice(unittest.TestCase):
 
     def test_connection_open(self):
         """Will test if the connection is really open."""
-        self.assertTrue(self.device.up)
+        self.assertTrue(self.device.connected)
 
     def test_cli(self):
         """Will test if the CLI is available, trying to execute a simple command."""

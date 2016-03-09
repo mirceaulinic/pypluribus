@@ -6,7 +6,6 @@ python:
 install:
   - pip install pylint
   - pip install saltpylint
-  - pip install modernize
   - pip install pep8
   - pip install -r requirements.txt
 # will not make tests for the moment
@@ -20,5 +19,7 @@ deploy:
     branch: master
 
 script:
-  - pylint --rcfile=.pylintrc pyPluribus/*.py
-  - pylint --rcfile=.pylintrc test/unit/TestPluribus.py
+  - pylint --rcfile=.pylintrc pyPluribus/__init__.py
+  - pylint --rcfile=.pylintrc pyPluribus/device.py
+  - pylint --rcfile=.pylintrc pyPluribus/config.py
+#  - pylint --rcfile=.pylintrc test/unit/TestPluribus.py
