@@ -81,13 +81,14 @@ class PluribusDevice(object):  # pylint: disable=too-many-instance-attributes
         except pexpect.TIMEOUT:
             raise pyPluribus.exceptions.ConnectionError("Connection to the device took too long!")
         except pexpect.EOF:
-            raise pyPluribus.exceptions.ConnectionError("Cannot connect to the device! Reason: reached EOF!")
+            raise pyPluribus.exceptions.ConnectionError("Cannot connect to the device! Able to access the device?!")
 
     def close(self):
         """Closes the SSH connection if the connection is UP."""
         if not self.connected:
             return None
         self._connection.close()
+        self.connected = False
 
     # <--- Connection management ---------------------------------------------------------------------------------------
 
