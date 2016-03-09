@@ -47,16 +47,19 @@ class PluribusConfig(object):
         """Downloads the config from the switch."""
         return self._device.show('running config')
 
-    def _upload_config_content(self, configuration):
+    def _upload_config_content(self, configuration, rollbacked=False):
         """Will try to upload configuration on the device."""
         try:
             for configuration_line in configuration.splitlines():
                 self._device.cli(configuration_line)
         except (pyPluribus.exceptions.CommandExecutionError,
-                pyPluribus.exceptions.TimeoutError) as pe:
-            self.discard_config()
+                pyPluribus.exceptions.TimeoutError) as plbrserr:
+            if not rollbacked:
+                # rollack errors will just trow
+                # to avoid loops
+                self.discard()
             raise pyPluribus.exceptions.ConfigLoadError("Unable to upload config on the device: {err}.\
-                Configuration discarded.".format(pe=pe.message))
+                Configuration discarded.".format(err=plbrserr.message))
         return True
 
     def load_candidate_config(self, filename=None, config=None):
@@ -74,12 +77,12 @@ class PluribusConfig(object):
         if filename is None:
             configuration = config
         else:
-            with open(filename) as f:
-                comfiguration = f.read()
+            with open(filename) as config_file:
+                configuration = config_file.read()
 
         return self._upload_config_content(configuration)
 
-    def discard_config(self):
+    def discard(self): # pylint: disable=no-self-use
         """Clears uncommited changes"""
         return self.rollback(1)
 
@@ -94,6 +97,10 @@ class PluribusConfig(object):
         """Will compute the differences"""
         return ''
 
-    def rollback(self, number = 1):
+    def rollback(self, number=1):
         """Rollbacks the configuration to a previous committed state."""
+        available_configs = len(self._config_history)
+        config_location = available_configs - number
+        config = ''
+        self._upload_config_content(config, rollbacked=True)
         return True
