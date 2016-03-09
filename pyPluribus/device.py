@@ -25,8 +25,8 @@ from __future__ import absolute_import
 import pexpect
 
 # local modules
-from lib.config import PluribusConfig
-from lib.exceptions import TimeoutError, EOFError, ConnectionError  # pylint: disable=redefined-builtin
+import pyPluribus.exceptions
+from pyPluribus.config import PluribusConfig
 
 
 class PluribusDevice(object):  # pylint: disable=too-many-instance-attributes
@@ -81,9 +81,9 @@ class PluribusDevice(object):  # pylint: disable=too-many-instance-attributes
             self.connected = True
             self.config = PluribusConfig(self)
         except pexpect.TIMEOUT:
-            raise ConnectionError("Connection to the device took too long!")
+            raise pyPluribus.exceptions.ConnectionError("Connection to the device took too long!")
         except pexpect.EOF:
-            raise ConnectionError("Cannot connect to the device! Reason: reached EOF!")
+            raise pyPluribus.exceptions.ConnectionError("Cannot connect to the device! Reason: reached EOF!")
 
     def close(self):
         """Closes the SSH connection if the connection is UP."""
@@ -103,7 +103,7 @@ class PluribusDevice(object):  # pylint: disable=too-many-instance-attributes
         :return: Raw output of the command
         """
         if not self.connected:
-            raise ConnectionError("Not connected to the deivce.")
+            raise pyPluribus.exceptions.ConnectionError("Not connected to the deivce.")
 
         output = ''
 
@@ -112,9 +112,9 @@ class PluribusDevice(object):  # pylint: disable=too-many-instance-attributes
             self._connection.expect_exact(self._cli_banner, timeout=self._timeout)
             output = self._connection.before
         except pexpect.TIMEOUT:
-            raise TimeoutError("Execution of command took too long!")
+            raise pyPluribus.exceptions.TimeoutError("Execution of command took too long!")
         except pexpect.EOF:
-            raise EOFError("Reached EOF while executing comamnd.")
+            raise pyPluribus.exceptions.EOFError("Reached EOF while executing comamnd.")
 
         return output
 

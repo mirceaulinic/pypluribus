@@ -18,4 +18,4 @@ Import lib objects
 """
 
 from __future__ import absolute_import
-from lib.device import PluribusDevice
+from pyPluribus.device import PluribusDevice
