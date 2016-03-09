@@ -31,3 +31,17 @@ class CommandExecutionError(Exception):
 class ConnectionError(Exception):
     """Raised when the connection with the pluribus device cannot be open."""
     pass
+
+
+class ConfigLoadError(Exception):
+    """Raised when not able to upload configuration on the device"""
+    pass
+
+
+class MergeConfigError(Exception):
+    """Raised when not able to merge the config"""
+    pass
+
+class ReplaceConfigError(Exception):
+    """Raised when not able to replace the config"""
+    pass
