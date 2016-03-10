@@ -51,7 +51,7 @@ class PluribusConfig(object):
 
     def _download_initial_config(self):
         """Loads the initial config."""
-        _initial_config = self._download_running_config()
+        _initial_config = self._download_running_config()  # this is a bit slow!
         self._last_working_config = _initial_config
         self._config_history.append(_initial_config)
         self._config_history.append(_initial_config)
