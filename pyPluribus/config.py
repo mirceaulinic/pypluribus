@@ -53,8 +53,8 @@ class PluribusConfig(object):
         """Loads the initial config."""
         _initial_config = self._download_running_config()
         self._last_working_config = _initial_config
-        self._config_history[0] = _initial_config
-        self._config_history[1] = _initial_config
+        self._config_history.append(_initial_config)
+        self._config_history.append(_initial_config)
 
     def _download_running_config(self):
         """Downloads the running config from the switch."""
@@ -139,7 +139,7 @@ class PluribusConfig(object):
         running_config_lines = running_config.splitlines()
         last_committed_config = self._last_working_config
         last_committed_config_lines = last_committed_config.splitlines()
-        difference = difflib.unified_diff(running_config_lines, last_committed_config_lines)
+        difference = difflib.unified_diff(running_config_lines, last_committed_config_lines, n=0)
         return '\n'.join(difference)
 
     def rollback(self, number=0):

@@ -92,12 +92,13 @@ class PluribusDevice(object):  # pylint: disable=too-many-instance-attributes
         """Closes the SSH connection if the connection is UP."""
         if not self.connected:
             return None
-        if self.config.changed() and not self.config.committed():
-            try:
-                self.config.discard()  # if configuration changed and not committed, will rollback
-            except pyPluribus.exceptions.ConfigurationDiscardError as discarderr:  # bad luck.
-                raise pyPluribus.exceptions.ConnectionError("Could not discard the configuration: \
-                    {err}".format(err=discarderr))
+        if self.config is not None:
+            if self.config.changed() and not self.config.committed():
+                try:
+                    self.config.discard()  # if configuration changed and not committed, will rollback
+                except pyPluribus.exceptions.ConfigurationDiscardError as discarderr:  # bad luck.
+                    raise pyPluribus.exceptions.ConnectionError("Could not discard the configuration: \
+                        {err}".format(err=discarderr))
         self._connection.close()
         self.config = None
         self._connection = None
