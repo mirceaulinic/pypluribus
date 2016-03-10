@@ -53,8 +53,8 @@ class PluribusConfig(object):
         """Loads the initial config."""
         _initial_config = self._download_running_config()
         self._last_working_config = _initial_config
-        self._config_history[0] = _initial_config
-        self._config_history[1] = _initial_config
+        self._config_history.append(_initial_config)
+        self._config_history.append(_initial_config)
 
     def _download_running_config(self):
         """Downloads the running config from the switch."""

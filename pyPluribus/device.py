@@ -81,8 +81,8 @@ class PluribusDevice(object):  # pylint: disable=too-many-instance-attributes
             self._connection.expect_exact(self._cli_banner, timeout=self._timeout)
             self._connection.sendline('pager off')  # to disable paging and get all output at once
             self._connection.expect_exact(self._cli_banner, timeout=self._timeout)
-            self.connected = True
             self.config = PluribusConfig(self)
+            self.connected = True
         except pexpect.TIMEOUT:
             raise pyPluribus.exceptions.ConnectionError("Connection to the device took too long!")
         except pexpect.EOF:
@@ -92,12 +92,13 @@ class PluribusDevice(object):  # pylint: disable=too-many-instance-attributes
         """Closes the SSH connection if the connection is UP."""
         if not self.connected:
             return None
-        if self.config.changed() and not self.config.committed():
-            try:
-                self.config.discard()  # if configuration changed and not committed, will rollback
-            except pyPluribus.exceptions.ConfigurationDiscardError as discarderr:  # bad luck.
-                raise pyPluribus.exceptions.ConnectionError("Could not discard the configuration: \
-                    {err}".format(err=discarderr))
+        if self.config is not None:
+            if self.config.changed() and not self.config.committed():
+                try:
+                    self.config.discard()  # if configuration changed and not committed, will rollback
+                except pyPluribus.exceptions.ConfigurationDiscardError as discarderr:  # bad luck.
+                    raise pyPluribus.exceptions.ConnectionError("Could not discard the configuration: \
+                        {err}".format(err=discarderr))
         self._connection.close()
         self.config = None
         self._connection = None
