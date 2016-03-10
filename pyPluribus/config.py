@@ -25,12 +25,23 @@ import pyPluribus.exceptions
 
 class PluribusConfig(object):
 
-    """Defines configuration-specific methods such as: commit, rollback, diff etc."""
+    """
+    Defines configuration-specific methods such as:
+        * commit
+        * rollback
+        * discard
+        * compare
+    Since Pluribus devices are WYSIWYG-type devices, there is only a "running-config" file
+    which also is "startup-config" equivalent. Thus, all changes are definitive.
+    In order to overcome this disadvantage, we have to emulate all methodologies and
+    store the history of configuration changes.
+    """
 
     def __init__(self, device):
         self._device = device
         self._last_working_config = ''
-        self._loaded = False
+        self._config_changed = False
+        self._committed = False
         self._config_history = list()
 
         self._download_initial_config()
@@ -41,10 +52,9 @@ class PluribusConfig(object):
         self._last_working_config = _initial_config
         self._config_history[0] = _initial_config
         self._config_history[1] = _initial_config
-        self._loaded = True
 
     def _download_running_config(self):
-        """Downloads the config from the switch."""
+        """Downloads the running config from the switch."""
         return self._device.show('running config')
 
     def _upload_config_content(self, configuration, rollbacked=False):
@@ -52,19 +62,21 @@ class PluribusConfig(object):
         try:
             for configuration_line in configuration.splitlines():
                 self._device.cli(configuration_line)
+            self._config_changed = True  # configuration was changed
+            self._committed = False  # and not committed yet
         except (pyPluribus.exceptions.CommandExecutionError,
-                pyPluribus.exceptions.TimeoutError) as plbrserr:
+                pyPluribus.exceptions.TimeoutError) as clierr:
             if not rollbacked:
                 # rollack errors will just trow
                 # to avoid loops
                 self.discard()
             raise pyPluribus.exceptions.ConfigLoadError("Unable to upload config on the device: {err}.\
-                Configuration discarded.".format(err=plbrserr.message))
+                Configuration will be discarded.".format(err=clierr.message))
         return True
 
     def load_candidate_config(self, filename=None, config=None):
         """
-        Will load a candidate configuration on the device.
+        Loads a candidate configuration on the device.
         In case the load fails at any point, will automatically rollback to last working configuration.
 
         :param filename: Specifies the name of the file with the configuration content.
@@ -83,24 +95,59 @@ class PluribusConfig(object):
         return self._upload_config_content(configuration)
 
     def discard(self):  # pylint: disable=no-self-use
-        """Clears uncommited changes"""
-        return self.rollback(1)
+        """
+        Clears uncommited changes.
+
+        :raise pyPluribus.exceptions.ConfigurationDiscardError: If the configuration applied cannot be discarded.
+        """
+        try:
+            self.rollback(0)
+        except pyPluribus.exceptions.RollbackError as rbackerr:
+            raise pyPluribus.exceptions.ConfigurationDiscardError("Cannot discard configuration: {err}.\
+                ".format(err=rbackerr))
 
     def commit(self):  # pylint: disable=no-self-use
         """Will commit the changes on the device"""
         self._last_working_config = self._download_running_config()
+        self._config_history.append(self._last_working_config)
+        self._committed = True  # comfiguration was committed
+        self._config_changed = False  # no changes since last commit :)
         return True  # this will be always true
         # since the changes are automatically applied
-        # Pluribus is WYSIWYG-type device...
 
     def compare(self):  # pylint: disable=no-self-use
         """Will compute the differences"""
         return ''
 
-    def rollback(self, number=1):
-        """Rollbacks the configuration to a previous committed state."""
+    def rollback(self, number=0):
+        """
+        Will rollback the configuration to a previous state.
+        Can be called also when
+
+        :param number: How many steps back in the configuration history must look back.
+        :raise pyPluribus.exceptions.RollbackError: In case the configuration cannot be rolled back.
+        """
+        if number < 0:
+            raise pyPluribus.exceptions.RollbackError("Please provide a positive number to rollback to!")
         available_configs = len(self._config_history)
-        config_location = available_configs - number - 1
-        config = self._config_history[config_location]
-        self._upload_config_content(config, rollbacked=True)
+        max_rollbacks = available_configs - 2
+        if max_rollbacks < 0:
+            raise pyPluribus.exceptions.RollbackError("Cannot rollback: \
+                not enough configration history available!")
+        if max_rollbacks > 0 and number > max_rollbacks:
+            raise pyPluribus.exceptions.RollbackError("Cannot rollback more than {cfgs} configurations!\
+                ".format(cfgs=max_rollbacks))
+        config_location = 1  # will load the initial config worst case (user never commited, but wants to discard)
+        if max_rollbacks > 0:  # in case of previous commit(s) will be able to load a specific configuration
+            config_location = available_configs - number - 1  # stored in location len() - rollabck_nb - 1
+            # covers also the case of discard uncommitted changes (rollback 0)
+        desired_config = self._config_history[config_location]
+        try:
+            self._upload_config_content(desired_config, rollbacked=True)
+        except pyPluribus.exceptions.ConfigLoadError as loaderr:
+            raise pyPluribus.exceptions.RollbackError("Cannot rollback: {err}".format(err=loaderr))
+        del self._config_history[(config_location+1):]  # delete all newer configurations than the config rolled back
+        self._last_working_config = desired_config
+        self._committed = True
+        self._config_changed = False
         return True

@@ -38,10 +38,21 @@ class ConfigLoadError(Exception):
     pass
 
 
+class ConfigurationDiscardError(Exception):
+    """Raised when not possible to discard a candidate configuration"""
+    pass
+
+
 class MergeConfigError(Exception):
     """Raised when not able to merge the config"""
     pass
 
+
 class ReplaceConfigError(Exception):
     """Raised when not able to replace the config"""
+    pass
+
+
+class RollbackError(Exception):
+    """Raised in case of rollback failure."""
     pass
