@@ -139,7 +139,7 @@ class PluribusConfig(object):
         running_config_lines = running_config.splitlines()
         last_committed_config = self._last_working_config
         last_committed_config_lines = last_committed_config.splitlines()
-        difference = difflib.unified_diff(running_config_lines, last_committed_config_lines)
+        difference = difflib.unified_diff(running_config_lines, last_committed_config_lines, n=0)
         return '\n'.join(difference)
 
     def rollback(self, number=0):

@@ -81,8 +81,8 @@ class PluribusDevice(object):  # pylint: disable=too-many-instance-attributes
             self._connection.expect_exact(self._cli_banner, timeout=self._timeout)
             self._connection.sendline('pager off')  # to disable paging and get all output at once
             self._connection.expect_exact(self._cli_banner, timeout=self._timeout)
-            self.config = PluribusConfig(self)
             self.connected = True
+            self.config = PluribusConfig(self)
         except pexpect.TIMEOUT:
             raise pyPluribus.exceptions.ConnectionError("Connection to the device took too long!")
         except pexpect.EOF:
