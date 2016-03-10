@@ -20,7 +20,8 @@ PluribusConfig class, in config.py file.
 """
 
 from __future__ import absolute_import
-from socket import error, gaierror
+from socket import error as socket_error
+from socket import gaierror as socket_gaierror
 
 # third party libs
 import paramiko
@@ -34,7 +35,7 @@ class PluribusDevice(object):  # pylint: disable=too-many-instance-attributes
 
     """Connection establishment and basic interaction with a Pluribus device."""
 
-    def __init__(self, hostname, username, password, port=22, timeout=60, keepalive=900):
+    def __init__(self, hostname, username, password, port=22, timeout=60, keepalive=60):
 
         self._hostname = hostname
         self._username = username
@@ -63,17 +64,18 @@ class PluribusDevice(object):  # pylint: disable=too-many-instance-attributes
                                      password=self._password,
                                      timeout=self._timeout,
                                      port=self._port)
+            self._connection.get_transport().set_keepalive(self._keepalive)
             self.connected = True
             self.config = PluribusConfig(self)
         except paramiko.ssh_exception.AuthenticationException:
             raise pyPluribus.exceptions.ConnectionError("Unable to open connection with {hostname}: \
                 invalid credentials!".format(hostname=self._hostname))
-        except socket.error as se:
+        except socket_error as sockerr:
             raise pyPluribus.exceptions.ConnectionError("Cannot open connection: {}. \
-                Wrong port?".format(se.message))
-        except socket.gaierror as sg:
+                Wrong port?".format(sockerr.message))
+        except socket_gaierror as sockgai:
             raise pyPluribus.exceptions.ConnectionError("Cannot open connection: {}. \
-                Wrong hostname?".format(sg.message))
+                Wrong hostname?".format(sockgai.message))
 
     def close(self):
         """Closes the SSH connection if the connection is UP."""
@@ -86,9 +88,9 @@ class PluribusDevice(object):  # pylint: disable=too-many-instance-attributes
                 except pyPluribus.exceptions.ConfigurationDiscardError as discarderr:  # bad luck.
                     raise pyPluribus.exceptions.ConnectionError("Could not discard the configuration: \
                         {err}".format(err=discarderr))
-        self._connection.close()
-        self.config = None
-        self._connection = None
+        self._connection.close()  # close SSH connection
+        self.config = None  # reset config object
+        self._connection = None  #
         self.connected = False
 
     # <--- Connection management ---------------------------------------------------------------------------------------
@@ -114,8 +116,9 @@ class PluribusDevice(object):  # pylint: disable=too-many-instance-attributes
         cli_output = ''
 
         ssh_session = self._connection.get_transport().open_session()  # opens a new SSH session
+        ssh_session.settimeout(self._timeout)
 
-        ssh_session.exec_command(command, self._timeout)
+        ssh_session.exec_command(command)
 
         ssh_output = ''
         err_output = ''
@@ -126,6 +129,20 @@ class PluribusDevice(object):  # pylint: disable=too-many-instance-attributes
         for byte_output in ssh_output_makefile:
             ssh_output += byte_output
 
+        for byte_error in ssh_error_makefile:
+            err_output += byte_error
+
+        if not ssh_output:
+            if err_output:
+                raise pyPluribus.exceptions.CommandExecutionError(err_output)
+
+        cli_output = '\n'.join(ssh_output.split(self._ssh_banner)[-1].splitlines()[1:])
+
+        if cli_output == 'Please enter username and password:':  # rare cases when connection is lost :(
+            self.open()  # retry to open connection
+            return self.cli(command)
+
+        return cli_output
 
     def execute_show(self, show_command, delim = ';'):
         """
