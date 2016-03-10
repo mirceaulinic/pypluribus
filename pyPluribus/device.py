@@ -71,11 +71,11 @@ class PluribusDevice(object):  # pylint: disable=too-many-instance-attributes
             raise pyPluribus.exceptions.ConnectionError("Unable to open connection with {hostname}: \
                 invalid credentials!".format(hostname=self._hostname))
         except socket_error as sockerr:
-            raise pyPluribus.exceptions.ConnectionError("Cannot open connection: {}. \
-                Wrong port?".format(sockerr.message))
+            raise pyPluribus.exceptions.ConnectionError("Cannot open connection: {skterr}. \
+                Wrong port?".format(skterr=sockerr.message))
         except socket_gaierror as sockgai:
-            raise pyPluribus.exceptions.ConnectionError("Cannot open connection: {}. \
-                Wrong hostname?".format(sockgai.message))
+            raise pyPluribus.exceptions.ConnectionError("Cannot open connection: {gaierr}. \
+                Wrong hostname?".format(gaierr=sockgai.message))
 
     def close(self):
         """Closes the SSH connection if the connection is UP."""
@@ -144,11 +144,11 @@ class PluribusDevice(object):  # pylint: disable=too-many-instance-attributes
 
         return cli_output
 
-    def execute_show(self, show_command, delim = ';'):
+    def execute_show(self, show_command, delim=';'):
         """
         Executes show-type commands on the CLI and returns parsable output usinng ';' as delimitor.
 
-        :param command: Show command to be executed
+        :param show_command: Show command to be executed
         :param delim: Will use specific delimitor. Default: ';'
         :raise pyPluribus.exceptions.TimeoutError: when execution of the command exceeds the timeout
         :raise pyPluribus.exceptions.CommandExecutionError: when not able to retrieve the output
@@ -163,8 +163,7 @@ class PluribusDevice(object):  # pylint: disable=too-many-instance-attributes
         """
 
         if not show_command.endswith('-show'):
-            raise  pyPluribus.exceptions.CommandExecutionError('All show commands must end with "-show"!')
-
+            raise pyPluribus.exceptions.CommandExecutionError('All show commands must end with "-show"!')
 
         if not delim or delim is None:
             delim = ';'
