@@ -19,6 +19,8 @@ This module contains configuration-specific class PluribusConfig and necessary h
 
 from __future__ import absolute_import
 
+import difflib
+
 # local modules
 import pyPluribus.exceptions
 
@@ -27,6 +29,7 @@ class PluribusConfig(object):
 
     """
     Defines configuration-specific methods such as:
+        * load_candidate_config
         * commit
         * rollback
         * discard
@@ -58,7 +61,7 @@ class PluribusConfig(object):
         return self._device.show('running config')
 
     def _upload_config_content(self, configuration, rollbacked=False):
-        """Will try to upload configuration on the device."""
+        """Will try to upload a specific configuration on the device."""
         try:
             for configuration_line in configuration.splitlines():
                 self._device.cli(configuration_line)
@@ -128,11 +131,16 @@ class PluribusConfig(object):
 
     def compare(self):  # pylint: disable=no-self-use
         """
-        Computes the difference between the candidate config and the "running config"/"startup config".
+        Computes the difference between the candidate config and the running config.
         """
         # becuase we emulate the configuration history
         # the difference is between the last committed config and the running-config
-        return ''
+        running_config = self._download_running_config()
+        running_config_lines = running_config.splitlines()
+        last_committed_config = self._last_working_config
+        last_committed_config_lines = last_committed_config.splitlines()
+        difference = difflib.unified_diff(running_config_lines, last_committed_config_lines)
+        return '\n'.join(difference)
 
     def rollback(self, number=0):
         """
