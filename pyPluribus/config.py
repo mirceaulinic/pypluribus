@@ -74,6 +74,14 @@ class PluribusConfig(object):
                 Configuration will be discarded.".format(err=clierr.message))
         return True
 
+    def changed(self):  # pylint: disable=no-self-use
+        """Returns if the configuration changes loaded had actually any effect on running config on the device"""
+        return self._config_changed and self.compare()
+
+    def committed(self):  # pylint: disable=no-self-use
+        """Returns if the configuration was committed"""
+        return self._committed
+
     def load_candidate_config(self, filename=None, config=None):
         """
         Loads a candidate configuration on the device.
@@ -108,15 +116,22 @@ class PluribusConfig(object):
 
     def commit(self):  # pylint: disable=no-self-use
         """Will commit the changes on the device"""
-        self._last_working_config = self._download_running_config()
-        self._config_history.append(self._last_working_config)
-        self._committed = True  # comfiguration was committed
-        self._config_changed = False  # no changes since last commit :)
-        return True  # this will be always true
-        # since the changes are automatically applied
+        if self._config_changed:
+            self._last_working_config = self._download_running_config()
+            self._config_history.append(self._last_working_config)
+            self._committed = True  # comfiguration was committed
+            self._config_changed = False  # no changes since last commit :)
+            return True  # this will be always true
+            # since the changes are automatically applied
+        self._committed = False  # make sure the _committed attribute is not True by any chance
+        return False  # nothing to commit
 
     def compare(self):  # pylint: disable=no-self-use
-        """Will compute the differences"""
+        """
+        Computes the difference between the candidate config and the "running config"/"startup config".
+        """
+        # becuase we emulate the configuration history
+        # the difference is between the last committed config and the running-config
         return ''
 
     def rollback(self, number=0):

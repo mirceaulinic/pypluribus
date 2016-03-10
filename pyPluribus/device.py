@@ -33,13 +33,14 @@ class PluribusDevice(object):  # pylint: disable=too-many-instance-attributes
 
     """Connection establishment and basic interaction with a Pluribus device."""
 
-    def __init__(self, hostname, username, password, port=22, timeout=60):
+    def __init__(self, hostname, username, password, port=22, timeout=60, keepalive=900):
 
         self._hostname = hostname
         self._username = username
         self._password = password
         self._port = port
         self._timeout = timeout
+        self._keepalive = keepalive
 
         self._cli_banner = 'CLI ({user}@{host}) > '.format(
             user=self._username,
@@ -56,11 +57,13 @@ class PluribusDevice(object):  # pylint: disable=too-many-instance-attributes
     def open(self):
         """Opens a SSH connection with a Pluribus machine."""
         self._connection = pexpect.spawn(
-            'ssh -o ConnectTimeout={timeout} -p {port} {user}@{host}'.format(
+            'ssh -o TCPKeepAlive=yes -o ServerAliveInterval={kpalv} -o ConnectTimeout={timeout} -p {port} {user}@{host}\
+            '.format(
                 timeout=self._timeout,
                 port=self._port,
                 user=self._username,
-                host=self._hostname
+                host=self._hostname,
+                kpalv=self._keepalive
             )
         )
 
@@ -89,7 +92,15 @@ class PluribusDevice(object):  # pylint: disable=too-many-instance-attributes
         """Closes the SSH connection if the connection is UP."""
         if not self.connected:
             return None
+        if self.config.changed() and not self.config.committed():
+            try:
+                self.config.discard()  # if configuration changed and not committed, will rollback
+            except pyPluribus.exceptions.ConfigurationDiscardError as discarderr:  # bad luck.
+                raise pyPluribus.exceptions.ConnectionError("Could not discard the configuration: \
+                    {err}".format(err=discarderr))
         self._connection.close()
+        self.config = None
+        self._connection = None
         self.connected = False
 
     # <--- Connection management ---------------------------------------------------------------------------------------
