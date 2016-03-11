@@ -75,10 +75,10 @@ Returns the difference between the configuration since last commit (initial conf
 .. code-block:: python
 
    my_lovely_pluribus.config.compare()
-   @@ -79 +79 @@
+   u'@@ -79 +79 @@
 
    -port-storm-control-modify port 39 speed 1g
-   +port-storm-control-modify port 39 speed 10g
+   +port-storm-control-modify port 39 speed 10g'
 
 
 Discard uncommitted configuration:
