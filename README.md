@@ -7,7 +7,7 @@ Install
 pyPluribus is available on PyPi and can be easily installed using the following command:
 
 ```
-pip install pyIOSXR
+pip install pyPluribus
 ```
 
 Documentation
