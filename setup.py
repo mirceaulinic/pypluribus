@@ -20,7 +20,7 @@ install_reqs = parse_requirements('requirements.txt', session=uuid.uuid1())
 
 reqs = [str(ir.req) for ir in install_reqs]
 
-version = '0.0.4'
+version = '0.3.0'
 
 setup(
     name                 = 'pyPluribus',
@@ -38,7 +38,7 @@ setup(
     keywords             = ['Pluribus', 'networking'],
     license              = 'Apache 2.0',
     classifiers = [
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'Intended Audience :: Science/Research',
         'Intended Audience :: System Administrators',
