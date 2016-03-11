@@ -29,7 +29,7 @@ class PluribusConfig(object):
 
     """
     Defines configuration-specific methods such as:
-        * load_candidate_config
+        * load_candidate
         * commit
         * rollback
         * discard
@@ -85,7 +85,7 @@ class PluribusConfig(object):
         """Returns if the configuration was committed"""
         return self._committed
 
-    def load_candidate_config(self, filename=None, config=None):
+    def load_candidate(self, filename=None, config=None):
         """
         Loads a candidate configuration on the device.
         In case the load fails at any point, will automatically rollback to last working configuration.
