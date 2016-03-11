@@ -22,4 +22,4 @@ script:
   - pylint --rcfile=.pylintrc pyPluribus/__init__.py
   - pylint --rcfile=.pylintrc pyPluribus/device.py
   - pylint --rcfile=.pylintrc pyPluribus/config.py
-#  - pylint --rcfile=.pylintrc test/unit/TestPluribus.py
+  # - pylint --rcfile=.pylintrc test/unit/TestPluribus.py

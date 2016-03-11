@@ -5,7 +5,13 @@ TestPluribus.py: this is a tester for the pyPluribus library. Will try to open &
 test basic getters such as CLI and execute_show and will test an end-to-end scenario of a configuration change history.
 """
 
+# stdlib
 from __future__ import absolute_import
+import unittest
+
+# local modules
+import pyPluribus.exceptions
+from pyPluribus import PluribusDevice
 
 __author__ = "Mircea Ulinic"
 __copyright__ = 'Copyright 2016, CloudFlare, Inc.'
@@ -14,15 +20,8 @@ __maintainer__ = "Mircea Ulinic"
 __contact__ = "mircea@cloudflare.com"
 __status__ = "Prototype"
 
-# stdlib
-import unittest
 
-# local modules
-import pyPluribus.exceptions
-from pyPluribus import PluribusDevice
-
-
-class _MyPluribusDeviceGlobals(object):
+class _MyPluribusDeviceGlobals(object):  # pylint: disable=too-few-public-methods
 
     """
     This clsas contains only static data, basically only constants to be used in the tester classes.
@@ -51,7 +50,7 @@ class _MyPluribusDeviceGlobals(object):
     # instead of "port-storm-control-modify port 39 speed 10g"
 
 
-class TestPluribusDevice(unittest.TestCase):
+class TestPluribusDevice(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
     """
     This will test the basic methods of the PluribusDevice: open&close connection, CLI getter etc.
@@ -127,17 +126,17 @@ class TestPluribusDevice(unittest.TestCase):
     def test_load_valid_candidate(self):
         """Will try to load a valid candidate config."""
         self.assertFalse(self.device.config.changed())  # config should not be changed at this point
-        self.assertTrue(self.device.load_candidate(
+        self.assertTrue(self.device.config.load_candidate(
             config=_MyPluribusDeviceGlobals.VALID_CONFIG))
         self.assertTrue(self.device.config.changed())  # now it should
         self.assertTrue(self.device.config.commit())  # will try to commit changes
         self.assertTrue(self.device.config.committed())  # committed?
         self.assertFalse(self.device.config.changed())  # config should not be changed
 
-    def test_load_valid_candidate_from_file(self):
+    def test_load_valid_candidate_from_file(self):  # pylint: disable=invalid-name
         """Will try to load a valid candidate configuration from a file."""
         self.assertFalse(self.device.config.changed())  # config should not be changed at this point
-        self.assertTrue(self.device.load_candidate(
+        self.assertTrue(self.device.config.load_candidate(
             filename=_MyPluribusDeviceGlobals.VALID_CONFIG_FILE_PATH))
         self.assertTrue(self.device.config.changed())  # now it should
         self.assertTrue(self.device.config.commit())  # will try to commit changes
@@ -160,12 +159,12 @@ class TestPluribusDevice(unittest.TestCase):
         """
         self.assertFalse(self.device.config.changed())
         self.assertRaises(pyPluribus.exceptions.ConfigLoadError,
-                         self.device.config.load_candidate,
-                         _MyPluribusDeviceGlobals.INVALID_CONFIG)
+                          self.device.config.load_candidate,
+                          _MyPluribusDeviceGlobals.INVALID_CONFIG)
         # should raise error and discard the wron config
         self.assertFalse(self.device.config.changed())  # configuration should not be changed
         self.assertFalse(self.device.config.commit())  # will not commit since the configuration was discarded
-        self.assertFalse(self.device.config.committed()) # definitely not committed
+        self.assertFalse(self.device.config.committed())  # definitely not committed
 
     def test_rollback_two_steps(self):
         """
@@ -175,13 +174,13 @@ class TestPluribusDevice(unittest.TestCase):
         """
         self.assertTrue(self.device.config.rollback(2))
 
-    def test_rollback_big_number_of_steps(self):
+    def test_rollback_big_number_of_steps(self):  # pylint: disable=invalid-name
         """Should raise error."""
-        self.assertRaises(pyPluribus.exceptions.RollbackError, self.device.confi.rollback, 100)
+        self.assertRaises(pyPluribus.exceptions.RollbackError, self.device.config.rollback, 100)
 
     def test_rollback_negative_number(self):
         """Should raise error."""
-        self.assertRaises(pyPluribus.exceptions.RollbackError, self.device.confi.rollback, -5)
+        self.assertRaises(pyPluribus.exceptions.RollbackError, self.device.config.rollback, -5)
 
     def test_rollback_verify(self):
         """
@@ -189,28 +188,28 @@ class TestPluribusDevice(unittest.TestCase):
         once more. But because we are already in the initial state and no more history available, should
         throw an error.
         """
-        self.assertRaises(pyPluribus.exceptions.RollbackError, self.device.confi.rollback, 1)
+        self.assertRaises(pyPluribus.exceptions.RollbackError, self.device.config.rollback, 1)
 
 if __name__ == '__main__':
 
-    test_runner = unittest.TextTestRunner()
+    TEST_RUNNER = unittest.TextTestRunner()
 
-    basic_commands = unittest.TestSuite()
-    basic_commands.addTest(TestPluribusDevice("test_connection_open"))
-    basic_commands.addTest(TestPluribusDevice("test_cli"))
-    basic_commands.addTest(TestPluribusDevice("test_raise_cli"))
-    basic_commands.addTest(TestPluribusDevice("test_execute_show"))
-    basic_commands.addTest(TestPluribusDevice("test_raise_execute_show"))
-    basic_commands.addTest(TestPluribusDevice("test_show"))
-    test_runner.run(basic_commands)
+    BASIC_COMMANDS = unittest.TestSuite()
+    BASIC_COMMANDS.addTest(TestPluribusDevice("test_connection_open"))
+    BASIC_COMMANDS.addTest(TestPluribusDevice("test_cli"))
+    BASIC_COMMANDS.addTest(TestPluribusDevice("test_raise_cli"))
+    BASIC_COMMANDS.addTest(TestPluribusDevice("test_execute_show"))
+    BASIC_COMMANDS.addTest(TestPluribusDevice("test_raise_execute_show"))
+    BASIC_COMMANDS.addTest(TestPluribusDevice("test_show"))
+    TEST_RUNNER.run(BASIC_COMMANDS)
 
-    full_config_scenario = unittest.TestSuite()
-    full_config_scenario.addTest(TestPluribusDevice("test_load_valid_candidate"))
-    full_config_scenario.addTest(TestPluribusDevice("test_load_valid_candidate_from_file"))
-    full_config_scenario.addTest(TestPluribusDevice("test_change_config_by_mistake"))
-    full_config_scenario.addTest(TestPluribusDevice("test_load_invalid_config"))
-    full_config_scenario.addTest(TestPluribusDevice("test_rollback_two_steps"))
-    full_config_scenario.addTest(TestPluribusDevice("test_rollback_big_number_of_steps"))
-    full_config_scenario.addTest(TestPluribusDevice("test_rollback_negative_number"))
-    full_config_scenario.addTest(TestPluribusDevice("test_rollback_verify"))
-    test_runner.run(full_config_scenario)
+    FULL_CONFIG_SCENARIO = unittest.TestSuite()
+    FULL_CONFIG_SCENARIO.addTest(TestPluribusDevice("test_load_valid_candidate"))
+    FULL_CONFIG_SCENARIO.addTest(TestPluribusDevice("test_load_valid_candidate_from_file"))
+    FULL_CONFIG_SCENARIO.addTest(TestPluribusDevice("test_change_config_by_mistake"))
+    FULL_CONFIG_SCENARIO.addTest(TestPluribusDevice("test_load_invalid_config"))
+    FULL_CONFIG_SCENARIO.addTest(TestPluribusDevice("test_rollback_two_steps"))
+    FULL_CONFIG_SCENARIO.addTest(TestPluribusDevice("test_rollback_big_number_of_steps"))
+    FULL_CONFIG_SCENARIO.addTest(TestPluribusDevice("test_rollback_negative_number"))
+    FULL_CONFIG_SCENARIO.addTest(TestPluribusDevice("test_rollback_verify"))
+    TEST_RUNNER.run(FULL_CONFIG_SCENARIO)
