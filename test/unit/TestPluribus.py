@@ -43,7 +43,6 @@ class _MyPluribusDeviceGlobals(object):
     PASSWORD = 'password'
     # <---- Connection details -----------------------------------------------------------------------------------------
 
-    TESTING_FULL_CONFIG_SCENARIO = False  # used to test end-to-end config scenario
     VALID_CONFIG = '''trunk-create name core05.scl01 port 4,8 speed 40g no-autoneg \
     jumbo enable lacp-mode active port-mac-address 06:a0:00:19:a0:4d send-port 4'''
     VALID_CONFIG_FILE_PATH = 'valid.cfg'
@@ -125,97 +124,49 @@ class TestPluribusDevice(unittest.TestCase):
 
     # ----- Configuration management ---------------------------------------------------------------------------------->
 
-    @unittest.skipUnless(_MyPluribusDeviceGlobals.TESTING_FULL_CONFIG_SCENARIO, True)  # run this test only in suite
-    def test_non_changed_config(self):
-        """Configuration should not be changed at this point."""
-        self.assertFalse(self.device.config.changed())
-
-    @unittest.skipUnless(_MyPluribusDeviceGlobals.TESTING_FULL_CONFIG_SCENARIO, True)
     def test_load_valid_candidate(self):
         """Will try to load a valid candidate config."""
-        valid_config = ''' '''
+        self.assertFalse(self.device.config.changed())  # config should not be changed at this point
         self.assertTrue(self.device.load_candidate(
             config=_MyPluribusDeviceGlobals.VALID_CONFIG))
+        self.assertTrue(self.device.config.changed())  # now it should
+        self.assertTrue(self.device.config.commit())  # will try to commit changes
+        self.assertTrue(self.device.config.committed())  # committed?
+        self.assertFalse(self.device.config.changed())  # config should not be changed
 
-    @unittest.skipUnless(_MyPluribusDeviceGlobals.TESTING_FULL_CONFIG_SCENARIO, True)
-    def test_config_changed(self):
-        """Tests if the configuration on the deviced is changed now."""
-        self.assertTrue(self.device.config.changed())
-
-    @unittest.skipUnless(_MyPluribusDeviceGlobals.TESTING_FULL_CONFIG_SCENARIO, True)
-    def test_commit(self):
-        """Will test if the commit succeeds."""
-        self.assertTrue(self.device.config.commit())
-
-    @unittest.skipUnless(_MyPluribusDeviceGlobals.TESTING_FULL_CONFIG_SCENARIO, True)
-    def test_committed(self):
-        """Are you committed?"""
-        self.assertTrue(self.device.config.committed())
-
-    @unittest.skipUnless(_MyPluribusDeviceGlobals.TESTING_FULL_CONFIG_SCENARIO, True)
-    def test_config_changed_after_commit(self):
-        """After commit should say that the config was not changed!"""
-        self.assertFalse(self.device.config.changed())
-
-    @unittest.skipUnless(_MyPluribusDeviceGlobals.TESTING_FULL_CONFIG_SCENARIO, True)
     def test_load_valid_candidate_from_file(self):
         """Will try to load a valid candidate configuration from a file."""
-        valid_config_file_path = 'pluribus_valid.cfg'
+        self.assertFalse(self.device.config.changed())  # config should not be changed at this point
         self.assertTrue(self.device.load_candidate(
             filename=_MyPluribusDeviceGlobals.VALID_CONFIG_FILE_PATH))
+        self.assertTrue(self.device.config.changed())  # now it should
+        self.assertTrue(self.device.config.commit())  # will try to commit changes
+        self.assertTrue(self.device.config.committed())  # committed?
+        self.assertFalse(self.device.config.changed())  # config should not be changed
 
-    @unittest.skipUnless(_MyPluribusDeviceGlobals.TESTING_FULL_CONFIG_SCENARIO, True)
-    def test_config_changed_again(self):
-        """Now the configuration should be changed again."""
-        self.assertTrue(self.device.config.changed())
-
-    @unittest.skipUnless(_MyPluribusDeviceGlobals.TESTING_FULL_CONFIG_SCENARIO, True)
-    def test_commit_again(self):
-        """Will try to commit the newest changes."""
-        self.assertTrue(self.device.config.commit())
-
-    @unittest.skipUnless(_MyPluribusDeviceGlobals.TESTING_FULL_CONFIG_SCENARIO, True)
     def test_change_config_by_mistake(self):
         """Will simulate a human error and will set a wrong command."""
+        self.assertFalse(self.device.config.changed())  # config should not be changed at this point
         self.assertTrue(self.device.config.load_candidate(
             config=_MyPluribusDeviceGlobals.UNWANTED_CONFIG))
+        self.assertTrue(self.device.config.changed())  # now it should be changed
+        self.assertTrue(self.device.config.discard())  # let's discard the unwanted config
+        self.assertFalse(self.device.config.changed())  # config discarded thus not changes
 
-    @unittest.skipUnless(_MyPluribusDeviceGlobals.TESTING_FULL_CONFIG_SCENARIO, True)
-    def test_discard_unwanted_config(self):
-        """Will cancel the unwanted config"""
-        self.assertTrue(self.device.config.discard())
-
-    @unittest.skipUnless(_MyPluribusDeviceGlobals.TESTING_FULL_CONFIG_SCENARIO, True)
-    def test_config_changed_after_discard(self):
-        """The configuration should be not changed now."""
-        self.assertFalse(self.device.config.changed())
-
-    @unittest.skipUnless(_MyPluribusDeviceGlobals.TESTING_FULL_CONFIG_SCENARIO, True)
     def test_load_invalid_config(self):
         """
         Will try to load invalid commands.
         Should raise pyPluribus.exceptions.ConfigLoadError and discard the config.
         """
+        self.assertFalse(self.device.config.changed())
         self.assertRaises(pyPluribus.exceptions.ConfigLoadError,
                          self.device.config.load_candidate,
                          _MyPluribusDeviceGlobals.INVALID_CONFIG)
+        # should raise error and discard the wron config
+        self.assertFalse(self.device.config.changed())  # configuration should not be changed
+        self.assertFalse(self.device.config.commit())  # will not commit since the configuration was discarded
+        self.assertFalse(self.device.config.committed()) # definitely not committed
 
-    @unittest.skipUnless(_MyPluribusDeviceGlobals.TESTING_FULL_CONFIG_SCENARIO, True)
-    def test_config_cahged_after_trying_to_load_invalid_conifg(self):
-        """When trying to load an invalid config, should discard and rollback to last commit."""
-        self.assertFalse(self.device.config.changed())
-
-    @unittest.skipUnless(_MyPluribusDeviceGlobals.TESTING_FULL_CONFIG_SCENARIO, True)
-    def test_commit_after_trying_to_load_invalid_config(self):
-        """Commit command should return false because there's nothing changed."""
-        self.assertFalse(self.device.config.commit())
-
-    @unittest.skipUnless(_MyPluribusDeviceGlobals.TESTING_FULL_CONFIG_SCENARIO, True)
-    def test_check_again_if_committed(self):
-        """Should not at all be committed."""
-        self.assertFalse(self.device.config.committed())
-
-    @unittest.skipUnless(_MyPluribusDeviceGlobals.TESTING_FULL_CONFIG_SCENARIO, True)
     def test_rollback_two_steps(self):
         """
         Should rollback nicely and have on the device the config we initially had.
@@ -224,18 +175,15 @@ class TestPluribusDevice(unittest.TestCase):
         """
         self.assertTrue(self.device.config.rollback(2))
 
-    @unittest.skipUnless(_MyPluribusDeviceGlobals.TESTING_FULL_CONFIG_SCENARIO, True)
     def test_rollback_big_number_of_steps(self):
         """Should raise error."""
         self.assertRaises(pyPluribus.exceptions.RollbackError, self.device.confi.rollback, 100)
 
-    @unittest.skipUnless(_MyPluribusDeviceGlobals.TESTING_FULL_CONFIG_SCENARIO, True)
     def test_rollback_negative_number(self):
         """Should raise error."""
         self.assertRaises(pyPluribus.exceptions.RollbackError, self.device.confi.rollback, -5)
 
-    @unittest.skipUnless(_MyPluribusDeviceGlobals.TESTING_FULL_CONFIG_SCENARIO, True)
-    def test_rollback_again(self):
+    def test_rollback_verify(self):
         """
         After the successfully rollback to the initial config and two failed rollbacks, will try to rollback
         once more. But because we are already in the initial state and no more history available, should
@@ -256,26 +204,13 @@ if __name__ == '__main__':
     basic_commands.addTest(TestPluribusDevice("test_show"))
     test_runner.run(basic_commands)
 
-    _MyPluribusDeviceGlobals.TESTING_FULL_CONFIG_SCENARIO = True
     full_config_scenario = unittest.TestSuite()
-    full_config_scenario.addTest(TestPluribusDevice("test_non_changed_config"))
     full_config_scenario.addTest(TestPluribusDevice("test_load_valid_candidate"))
-    full_config_scenario.addTest(TestPluribusDevice("test_config_changed"))
-    full_config_scenario.addTest(TestPluribusDevice("test_commit"))
-    full_config_scenario.addTest(TestPluribusDevice("test_commit"))
-    full_config_scenario.addTest(TestPluribusDevice("test_config_changed_after_commit"))
     full_config_scenario.addTest(TestPluribusDevice("test_load_valid_candidate_from_file"))
-    full_config_scenario.addTest(TestPluribusDevice("test_config_changed_again"))
-    full_config_scenario.addTest(TestPluribusDevice("test_commit_again"))
     full_config_scenario.addTest(TestPluribusDevice("test_change_config_by_mistake"))
-    full_config_scenario.addTest(TestPluribusDevice("test_discard_unwanted_config"))
-    full_config_scenario.addTest(TestPluribusDevice("test_config_changed_after_discard"))
     full_config_scenario.addTest(TestPluribusDevice("test_load_invalid_config"))
-    full_config_scenario.addTest(TestPluribusDevice("test_config_cahged_after_trying_to_load_invalid_conifg"))
-    full_config_scenario.addTest(TestPluribusDevice("test_commit_after_trying_to_load_invalid_config"))
-    full_config_scenario.addTest(TestPluribusDevice("test_check_again_if_committed"))
     full_config_scenario.addTest(TestPluribusDevice("test_rollback_two_steps"))
     full_config_scenario.addTest(TestPluribusDevice("test_rollback_big_number_of_steps"))
     full_config_scenario.addTest(TestPluribusDevice("test_rollback_negative_number"))
-    full_config_scenario.addTest(TestPluribusDevice("test_rollback_again"))
+    full_config_scenario.addTest(TestPluribusDevice("test_rollback_verify"))
     test_runner.run(full_config_scenario)
