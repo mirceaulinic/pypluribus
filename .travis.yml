@@ -1,13 +1,10 @@
 language: python
 python:
-- 2.7
-- 3.4
-- 3.5
-# install:
-# - pip install pylint
-# - pip install saltpylint
-# - pip install pep8
-# - pip install -r requirements.txt
+  - 2.7
+  - 3.4
+  - 3.5
+install:
+  - pip install -r requirements-dev.txt
 deploy:
   provider: pypi
   user: mirucha
@@ -16,7 +13,6 @@ deploy:
   on:
     tags: true
     repo: mirceaulinic/pypluribus
-# script:
-# - pylint --rcfile=.pylintrc pyPluribus/__init__.py
-# - pylint --rcfile=.pylintrc pyPluribus/device.py
-# - pylint --rcfile=.pylintrc pyPluribus/config.py
+    branch: master
+script:
+  - pylama pyPluribus/.
