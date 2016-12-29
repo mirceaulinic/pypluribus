@@ -20,7 +20,7 @@ install_reqs = parse_requirements('requirements.txt', session=uuid.uuid1())
 
 reqs = [str(ir.req) for ir in install_reqs]
 
-version = '0.3.0'
+version = '0.3.1'
 
 setup(
     name                 = 'pyPluribus',
@@ -53,5 +53,7 @@ setup(
         'Topic :: Scientific/Engineering',
         'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5'
       ]
 )
