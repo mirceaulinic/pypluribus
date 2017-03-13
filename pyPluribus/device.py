@@ -24,7 +24,7 @@ from socket import error as socket_error
 from socket import gaierror as socket_gaierror
 
 # third party libs
-import paramiko
+from netmiko import ConnectHandler
 
 # local modules
 import pyPluribus.exceptions
@@ -36,61 +36,29 @@ class PluribusDevice(object):  # pylint: disable=too-many-instance-attributes
     """Connection establishment and basic interaction with a Pluribus device."""
 
     def __init__(self, hostname, username, password, port=22, timeout=60, keepalive=60):
-
         self._hostname = hostname
         self._username = username
         self._password = password
         self._port = port
         self._timeout = timeout
-        self._keepalive = keepalive
-
-        self._ssh_banner = 'Connected to Switch {hostname};'.format(
-            hostname=self._hostname
-        )
         self._connection = None
-
         self.connected = False
-        self.config = None
 
     # ---- Connection management -------------------------------------------------------------------------------------->
 
     def open(self):
         """Opens a SSH connection with a Pluribus machine."""
-        self._connection = paramiko.SSHClient()
-        self._connection.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        try:
-            self._connection.connect(hostname=self._hostname,
-                                     username=self._username,
-                                     password=self._password,
-                                     timeout=self._timeout,
-                                     port=self._port)
-            self._connection.get_transport().set_keepalive(self._keepalive)
-            self.connected = True
-            self.config = PluribusConfig(self)
-        except paramiko.ssh_exception.AuthenticationException:
-            raise pyPluribus.exceptions.ConnectionError("Unable to open connection with {hostname}: \
-                invalid credentials!".format(hostname=self._hostname))
-        except socket_error as sockerr:
-            raise pyPluribus.exceptions.ConnectionError("Cannot open connection: {skterr}. \
-                Wrong port?".format(skterr=sockerr.message))
-        except socket_gaierror as sockgai:
-            raise pyPluribus.exceptions.ConnectionError("Cannot open connection: {gaierr}. \
-                Wrong hostname?".format(gaierr=sockgai.message))
+        self._connection = ConnectHandler(device_type='pluribus',
+                                          ip=self._hostname,
+                                          username=self._username,
+                                          password=self._password,
+                                          port=self._port,
+                                          timeout=self._timeout)
+        self.connected = True
 
     def close(self):
         """Closes the SSH connection if the connection is UP."""
-        if not self.connected:
-            return None
-        if self.config is not None:
-            if self.config.changed() and not self.config.committed():
-                try:
-                    self.config.discard()  # if configuration changed and not committed, will rollback
-                except pyPluribus.exceptions.ConfigurationDiscardError as discarderr:  # bad luck.
-                    raise pyPluribus.exceptions.ConnectionError("Could not discard the configuration: \
-                        {err}".format(err=discarderr))
-        self._connection.close()  # close SSH connection
-        self.config = None  # reset config object
-        self._connection = None  #
+        self._connection.disconnect()
         self.connected = False
 
     # <--- Connection management ---------------------------------------------------------------------------------------
@@ -112,37 +80,7 @@ class PluribusDevice(object):  # pylint: disable=too-many-instance-attributes
         """
         if not self.connected:
             raise pyPluribus.exceptions.ConnectionError("Not connected to the deivce.")
-
-        cli_output = ''
-
-        ssh_session = self._connection.get_transport().open_session()  # opens a new SSH session
-        ssh_session.settimeout(self._timeout)
-
-        ssh_session.exec_command(command)
-
-        ssh_output = ''
-        err_output = ''
-
-        ssh_output_makefile = ssh_session.makefile()
-        ssh_error_makefile = ssh_session.makefile_stderr()
-
-        for byte_output in ssh_output_makefile:
-            ssh_output += byte_output
-
-        for byte_error in ssh_error_makefile:
-            err_output += byte_error
-
-        if not ssh_output:
-            if err_output:
-                raise pyPluribus.exceptions.CommandExecutionError(err_output)
-
-        cli_output = '\n'.join(ssh_output.split(self._ssh_banner)[-1].splitlines()[1:])
-
-        if cli_output == 'Please enter username and password:':  # rare cases when connection is lost :(
-            self.open()  # retry to open connection
-            return self.cli(command)
-
-        return cli_output
+        return self._connection.send_command(command)
 
     def execute_show(self, show_command, delim=';'):
         """
