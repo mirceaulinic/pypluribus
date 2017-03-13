@@ -54,6 +54,7 @@ class PluribusDevice(object):  # pylint: disable=too-many-instance-attributes
                                           password=self._password,
                                           port=self._port,
                                           timeout=self._timeout)
+        self.config = PluribusConfig(self)
         self.connected = True
 
     def close(self):
