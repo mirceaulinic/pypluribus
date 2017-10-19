@@ -1,6 +1,6 @@
 pyPluribus
 =====
-Python library to interact with Pluribus devices
+Python library to interact with Pluribus devices.
 
 Install
 =======
