@@ -83,6 +83,6 @@ Beginning with release 0.60, pyPluribus is used by [NAPALM](https://github.com/n
 
 License
 ======
-Copyright 2016 CloudFlare, Inc.
+Copyright 2016-2017 CloudFlare, Inc.
 
 Licensed under the Apache License, Version 2.0: http://www.apache.org/licenses/LICENSE-2.0
