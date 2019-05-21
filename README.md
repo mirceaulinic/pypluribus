@@ -2,6 +2,8 @@ pyPluribus
 =====
 Python library to interact with Pluribus devices.
 
+This library has been deprecated.
+
 Install
 =======
 pyPluribus is available on PyPi and can be easily installed using the following command:
